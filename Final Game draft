@@ -1,0 +1,83 @@
+#include <Adafruit_CircuitPlayground.h>
+
+#define WIN_DELAY  500 // milliseconds
+#define RANDOM_DELAY_MIN 1000 // milliseconds
+#define RANDOM_DELAY_MAX 5000 // milliseconds
+#define MAX_SCORE 5
+#define MAX_ROUNDS 10
+
+int score = 0;
+int rounds = 0;
+bool gameStarted = false;
+
+void setup() {
+  CircuitPlayground.begin();
+  CircuitPlayground.setBrightness(10);
+}
+
+void loop() {
+  if (CircuitPlayground.leftButton() && !gameStarted) {
+    gameStarted = true;
+    gamePlay();
+  }
+}
+
+void gamePlay() {
+  // Wait a random amount of time before starting the game
+  delay(random(RANDOM_DELAY_MIN, RANDOM_DELAY_MAX));
+
+  // Light the LED of the current round
+  CircuitPlayground.setPixelColor(rounds, 255, 0, 0); // Red color
+  
+  unsigned long startTime = millis();
+
+  // Wait for the user to press the right button
+  while (!CircuitPlayground.rightButton()) { }
+
+  unsigned long reactionTime = millis() - startTime;
+  
+  if (reactionTime <= WIN_DELAY) {
+    // If the user reacted quickly enough, they win!
+    score++;
+    CircuitPlayground.setPixelColor(rounds, 0, 255, 0); // Green color
+    CircuitPlayground.playTone(262, 500); // Play a victory tone
+  } else {
+    // If the user reacted too slowly, they lose
+    CircuitPlayground.setPixelColor(rounds, 0, 0, 255); // Blue color
+    CircuitPlayground.playTone(196, 500); // Play a losing tone
+  }
+
+  rounds++;
+  if(rounds >= MAX_ROUNDS) {
+    rounds = 0;
+    score = 0;
+    CircuitPlayground.clearPixels();
+  }
+
+  // If score reaches MAX_SCORE, play confetti pattern and reset game
+  if (score >= MAX_SCORE) {
+    playConfettiPattern();
+    score = 0;
+    rounds = 0;
+  }
+
+  delay(1000); // Delay to show win/lose color
+  gameStarted = false;
+}
+
+void playConfettiPattern() {
+  // Loop over all LEDs
+  for(int i = 0; i < 10; i++) {
+    // Display random color on each LED
+    CircuitPlayground.setPixelColor(i, random(0, 255), random(0, 255), random(0, 255));
+  }
+
+  // Play a victory tune
+  CircuitPlayground.playTone(523, 500); // High C
+
+  // Pause before clearing the LEDs
+  delay(2000);
+
+  // Clear all LEDs
+  CircuitPlayground.clearPixels();
+}
